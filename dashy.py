@@ -12,6 +12,8 @@ from matplotlib.dates import AutoDateFormatter, AutoDateLocator
 import plotly.plotly as py
 import plotly.tools as tls
 import datetime
+from dash.dependencies import Input, Output
+
 
 r = requests.get('https://newsapi.org/v2/top-headlines?country=us&category=business&apiKey=c7ece947bed84fefa518b875c951322e')
 json_data = r.json()["articles"]
@@ -124,6 +126,10 @@ app.layout = html.Div(children=[
         News & Stock
     '''),
 
+
+    dcc.Input(id='my-id', value='initial value', type='text'),
+    html.Div(id='my-div'),
+
     dcc.Graph(
         id='example-graph',
         figure= go.Figure(
@@ -144,6 +150,37 @@ app.layout = html.Div(children=[
         ),
     generate_news_table(news)
 ])
+
+@app.callback(
+    Output('example-graph', 'figure'),
+    [Input(component_id='my-id', component_property='value')]
+)
+def update_output_div(input_value):
+    return 'You\'ve entered "{}"'.format(input_value)
+def update_figure(input_value):
+    df, meta_data = ts.get_daily(symbol=input_value, outputsize='full')
+    df = df['4. close']
+    df = pd.DataFrame({'ds':df.index, 'y':df.values})
+    df['ds'] = pd.to_datetime(df['ds'])
+    df = df[(df['ds'] > '2014-05-10') & (df['ds'] < '2019-05-10')]
+
+    m = Prophet()
+    m.fit(df)
+    future = m.make_future_dataframe(periods=365)
+    forecast = m.predict(future)
+    a = plot(m, forecast)
+    return {'data':a['data'],
+        'layout' : go.Layout(
+            autosize=False,
+            width=500,
+            height=500,
+            margin=go.layout.Margin(
+                l=50,
+                r=50,
+                b=100,
+                t=100,
+                pad=4))}
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
