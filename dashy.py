@@ -3,8 +3,6 @@ import dash_core_components as dcc
 import dash_html_components as html
 import pandas as pd
 import requests
-from alpha_vantage.techindicators import TechIndicators
-from alpha_vantage.timeseries import TimeSeries
 import plotly.graph_objs as go
 from fbprophet import Prophet
 import matplotlib.pyplot as plt
@@ -13,7 +11,7 @@ import plotly.plotly as py
 import plotly.tools as tls
 import datetime
 from dash.dependencies import Input, Output
-
+from iexfinance.stocks import get_historical_data
 
 r = requests.get('https://newsapi.org/v2/top-headlines?country=us&category=business&apiKey=c7ece947bed84fefa518b875c951322e')
 json_data = r.json()["articles"]
@@ -44,31 +42,19 @@ def generate_news_table(dataframe, max_rows=10):
                         for i in range(min(len(dataframe), max_rows))
                     ]
                 ),
-                style={"height": "150px", "overflowY": "scroll"},
+                style={"height": "550px", "width": "500px", "overflowY": "scroll"},
             ),
             html.P(
                 "Last update : " + datetime.datetime.now().strftime("%H:%M:%S"),
                 style={"fontSize": "11", "marginTop": "4", "color": "#45df7e"},
             ),
         ],
-        style={"height": "100%"},
+        style={"height": "100%", 'display': 'inline-block'},
     )
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-
-ts = TimeSeries(key='X5AYBIDIH2EVGNW9', output_format='pandas')
-df, meta_data = ts.get_daily(symbol='DJIA', outputsize='full')
-df = df['4. close']
-df = pd.DataFrame({'ds':df.index, 'y':df.values})
-df['ds'] = pd.to_datetime(df['ds'])
-df = df[(df['ds'] > '2014-05-10') & (df['ds'] < '2019-05-10')]
-
-m = Prophet()
-m.fit(df)
-future = m.make_future_dataframe(periods=365)
-forecast = m.predict(future)
 
 def plot(
     m, fcst, ax=None, uncertainty=True, plot_cap=True, xlabel='ds', ylabel='y',
@@ -117,69 +103,41 @@ def plot(
     plotly_fig = tls.mpl_to_plotly(fig)
     return plotly_fig
 
-a = plot(m, forecast)
-
-app.layout = html.Div(children=[
+app.layout = html.Div([
     html.H1(children='Stock Dashboard'),
 
     html.Div(children='''
-        News & Stock
+        Enter stock symbol for 1 year forecast
     '''),
 
-
-    dcc.Input(id='my-id', value='initial value', type='text'),
-    html.Div(id='my-div'),
-
-    dcc.Graph(
-        id='example-graph',
-        figure= go.Figure(
-            data=a['data'],
-            layout = go.Layout(
-                autosize=False,
-                width=500,
-                height=500,
-                margin=go.layout.Margin(
-                    l=50,
-                    r=50,
-                    b=100,
-                    t=100,
-                    pad=4
-                )
-            )
-            )
-        ),
-    generate_news_table(news)
-])
+    dcc.Input(id='my-id', value='spy', type='text'),
+    html.Div([
+        generate_news_table(news),
+        dcc.Graph(
+            id='example-graph',
+                figure={'layout': {'height': 600, 'width': 600}}, style={'display': 'inline-block'}
+                    )], style={'width': '100%', 'display': 'inline-block'})
+    ])
 
 @app.callback(
     Output('example-graph', 'figure'),
-    [Input(component_id='my-id', component_property='value')]
+    [Input('my-id', 'value')]
 )
-def update_output_div(input_value):
-    return 'You\'ve entered "{}"'.format(input_value)
+
 def update_figure(input_value):
-    df, meta_data = ts.get_daily(symbol=input_value, outputsize='full')
-    df = df['4. close']
-    df = pd.DataFrame({'ds':df.index, 'y':df.values})
-    df['ds'] = pd.to_datetime(df['ds'])
-    df = df[(df['ds'] > '2014-05-10') & (df['ds'] < '2019-05-10')]
+
+    start = datetime.datetime(2016, 5, 20)
+    end = datetime.datetime(2019, 5, 20)
+    f = get_historical_data(input_value, start, end, output_format='pandas')
+    f = f['close']
+    df = pd.DataFrame({'ds':f.index, 'y':f.values})
 
     m = Prophet()
     m.fit(df)
     future = m.make_future_dataframe(periods=365)
     forecast = m.predict(future)
     a = plot(m, forecast)
-    return {'data':a['data'],
-        'layout' : go.Layout(
-            autosize=False,
-            width=500,
-            height=500,
-            margin=go.layout.Margin(
-                l=50,
-                r=50,
-                b=100,
-                t=100,
-                pad=4))}
+    return {'data':go.Figure(a['data'])}
 
 
 if __name__ == '__main__':
