@@ -154,6 +154,22 @@ def update_header(submit, input_value):
 
     return description
 
+#Update stats table
+@app.callback(
+    Output('metadata', 'data'),
+    [Input('submit', 'n_clicks')],
+    [State('input-1-state', 'value')]
+)
+def update_graph(submit, input_value):
+    b = Stock(input_value)
+    d = b.get_news()
+    df = pd.DataFrame(d)
+    df = df[['headline', 'url']]
+    e = pd.DataFrame([b.get_key_stats()])
+    e = e[['EBITDA', 'beta', 'latestEPS', 'marketcap']]
+
+    return e.to_dict('records')
+
 #Update news
 @app.callback(
     Output('table', 'children'),
