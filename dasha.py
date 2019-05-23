@@ -46,49 +46,72 @@ app.layout = html.Div([
             {'label': 'Forecast', 'value': 'ts'}
     ], values=[]),
 
-    dcc.Graph(
-        id='graph'),
 
     html.Div([
 
         html.Div([
-            html.Table(
-                [
-                    html.Tr(
-                        [
-                            html.Td(
-                                html.A(
-                                    df.iloc[i]["headline"],
-                                    href=df.iloc[i]["url"],
-                                    target="_blank",
-                                )
-                            )
-                        ]
-                    )
-                    for i in range(min(len(df), 10))
-                ], id='table'
-                ),], style={'width': '49%', 'display': 'inline-block', "overflowY": "scroll"}),
-
-        html.Div([
             html.Div(id='description', children='company description'),
+
             html.Div(
                 dash_table.DataTable(
                 id='metadata',
                 style_cell_conditional=[
                     {'if': {'column_id': 'EBITDA'},
-                     'width': '120px'},
+                     'width': '110px'},
                     {'if': {'column_id': 'beta'},
-                     'width': '120px'},
+                     'width': '110px'},
                     {'if': {'column_id': 'latestEPS'},
-                    'width': '120px'},
+                    'width': '110px'},
                     {'if': {'column_id': 'marketcap'},
-                    'width': '120px'},
+                    'width': '110px'},
                 ],
                 columns=[{"name": i, "id": i} for i in e.columns],
-                data=e.to_dict('records')))]
-                , style={'width': '49%', 'display': 'inline-block'})
-                ]),
-    ])
+                data=e.to_dict('records'),
+                style_header={'backgroundColor': '#18252E'},
+    style_cell={
+        'backgroundColor': '#18252E',
+        'color': 'white'})),
+
+            html.P('Headlines',style={"fontSize":"13","color":"#45df7e"}),
+            html.Div([
+                html.Table(
+                    [
+                        html.Tr(
+                            [
+                                html.Td(
+                                    html.A(
+                                        df.iloc[i]["headline"],
+                                        href=df.iloc[i]["url"],
+                                        target="_blank",
+                                    )
+                                )
+                            ]
+                        )
+                        for i in range(min(len(df), 10))
+                    ], id='table'
+                    ),
+                    ])]
+
+                , style={'width': '49%', 'display': 'inline-block', 'float': 'left', "height":"33%",
+                "backgroundColor": "#18252E",
+                "color": "white",
+                "fontSize": "13",
+                "padding":"10px 10px 0px 10px",
+                "marginTop":"5",
+                "marginBottom":"0"})
+                ,    dcc.Graph(
+                        id='graph',
+                        figure={'data':[],
+                             'layout': {
+                                    'plot_bgcolor': "#18252E",
+                                    'paper_bgcolor': "#18252E",
+                                    'font': {
+                                        'color': 'white'
+                                    }}},
+                        style={'width': '49%', 'display': 'inline-block', 'float': 'right', "backgroundColor": "#18252E", "color": "white",}),
+], style={'width': '100%', 'display': 'inline-block'}),
+    ],
+    style={"padding": "0", "height": "100vh", "backgroundColor": "#1a2d46", 'color': 'white'},)
 
 
 @app.callback(
@@ -175,7 +198,7 @@ def update_figure(submit, checkbox, input_value):
 
     traces.append(actual)
     m = Prophet()
-    
+
     if checkbox:
 
         m.fit(df)
@@ -192,7 +215,16 @@ def update_figure(submit, checkbox, input_value):
         )
         traces.append(forecast)
 
-    a = {'data':go.Figure(traces)}
+    a = {
+        'data': traces,
+        'layout': go.Layout(
+            {
+                   'plot_bgcolor': "#18252E",
+                   'paper_bgcolor': "#18252E",
+                   'font': {
+                       'color': 'white'}}
+        )
+    }
 
     return a
 
