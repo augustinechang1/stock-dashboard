@@ -50,6 +50,7 @@ app.layout = html.Div([
     html.Div([
         html.Div([
             html.Div([
+                html.P('About',style={"fontSize":"13","color":"#45df7e"}),
                 html.Div(id='description', children='company description'),
 
                 html.Div(
@@ -71,11 +72,11 @@ app.layout = html.Div([
         style_cell={
             'backgroundColor': '#18252E',
             'color': 'white'}))]
-            , style={'width': '49%', 'display': 'inline-block', 'float': 'left', "height":"33%",
+            , style={'width': '49%', 'height': '500px', 'display': 'inline-block', 'float': 'left', "height":"33%",
             "backgroundColor": "#18252E",
             "color": "white",
             "fontSize": "13",
-            "padding":"10px 10px 0px 10px",
+            "padding":"10px 10px 10px 10px",
             "marginTop":"5",
             "marginBottom":"0"})
                 ,    dcc.Graph(
@@ -106,9 +107,9 @@ app.layout = html.Div([
                                 ]
                             )
                             for i in range(min(len(df), 10))
-                        ], id='table'
+                        ], id='table',
                         ),
-                        ])], style={'width': '49%', 'display': 'inline-block', 'float': 'left', "height":"33%",
+                        ], style={"height": "250px", "overflowY": "scroll"})], style={'width': '49%', 'display': 'inline-block', 'float': 'left', "height":"33%",
                         "backgroundColor": "#18252E",
                         "color": "white",
                         "fontSize": "13",
@@ -122,7 +123,7 @@ app.layout = html.Div([
     ],
     style={"padding": "0", "height": "100vh", "backgroundColor": "#1a2d46", 'color': 'white'},)
 
-
+#Company Name
 @app.callback(
     Output('name', 'children'),
     [Input('submit', 'n_clicks')],
@@ -138,6 +139,7 @@ def update_header(submit, input_value):
     title = name + ' $'+ f
     return title
 
+#Company Description
 @app.callback(
     Output('description', 'children'),
     [Input('submit', 'n_clicks')],
@@ -152,6 +154,7 @@ def update_header(submit, input_value):
 
     return description
 
+#Update news
 @app.callback(
     Output('table', 'children'),
     [Input('submit', 'n_clicks')],
@@ -183,7 +186,7 @@ def update_table(submit, input_value):
             for i in range(min(len(df), 10))
         ]
 
-
+#Update graph
 @app.callback(
     Output('graph', 'figure'),
     [Input('submit', 'n_clicks'),
