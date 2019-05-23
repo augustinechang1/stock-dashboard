@@ -1,4 +1,4 @@
 ## Stock Dashboard
- Dash Plotly web app featuring live business news using newsapi, 1 year stock forecast using Facebook Prophet, IEX Finance API
+ Interactive web app featuring live company stock price, stats, news, and 1 year stock forecast
 
 ![header](image/dashboard.png)
