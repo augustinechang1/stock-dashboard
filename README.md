@@ -3,8 +3,4 @@
 
 ## Demo video
 
- ![header](image/stockdash.gif)
-
-## Demo image
-
- ![header](image/dashboard.png)
+ ![header](image/stock.gif)
