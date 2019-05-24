@@ -16,13 +16,13 @@ from iexfinance import Stock
 import dash_table_experiments as dt
 import dash_table
 
-b = Stock('goog')
+b = Stock('spy')
 d = b.get_news()
 df = pd.DataFrame(d)
 df = df[['headline', 'url']]
 e = pd.DataFrame([b.get_key_stats()])
 e = e[['EBITDA', 'beta', 'latestEPS', 'marketcap']]
-
+e[:] = 0
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -30,11 +30,22 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
 
-    html.Div(children='''
-        Enter stock symbol
-    '''),
+    html.Div(children='''Enter stock symbol'''),
 
     dcc.Input(id='input-1-state', value='', type='text'),
+
+    # html.Div(id='intermediate', ),
+
+    dcc.Graph(
+            id='intermediate',
+            figure={'data':[],
+                 'layout': {
+                        'plot_bgcolor': "#18252E",
+                        'paper_bgcolor': "#18252E",
+                        'font': {
+                            'color': 'white'
+                        }}},
+            style={'display': 'none'}),
 
     html.Button(id='submit', n_clicks=0, children='Submit'),
 
@@ -72,7 +83,7 @@ app.layout = html.Div([
         style_cell={
             'backgroundColor': '#18252E',
             'color': 'white'}))]
-            , style={'width': '49%', 'height': '500px', 'display': 'inline-block', 'float': 'left', "height":"33%",
+            , style={'width': '49%', 'height': '33%', 'display': 'inline-block', 'float': 'left', "height":"33%",
             "backgroundColor": "#18252E",
             "color": "white",
             "fontSize": "13",
@@ -202,6 +213,40 @@ def update_table(submit, input_value):
             for i in range(min(len(df), 10))
         ]
 
+forecasting = []
+
+@app.callback(
+    Output('intermediate', 'figure'),
+    [Input('submit', 'n_clicks')],
+    [State('input-1-state', 'value')]
+)
+
+def clean_data(submit, input_value):
+
+    start = datetime.datetime(2016, 1, 1)
+    end =  datetime.datetime.now()
+    f = get_historical_data(input_value, start, end, output_format='pandas')
+    f = f['close']
+    df = pd.DataFrame({'ds':f.index, 'y':f.values})
+    m = Prophet()
+    m.fit(df)
+    future = m.make_future_dataframe(periods=120)
+    forecast = m.predict(future)
+    forecast = forecast.set_index('ds')
+    forecast_valid = forecast['yhat']
+    forecast_valid = pd.DataFrame(forecast_valid)
+
+    forecast = go.Scatter(
+                    x=forecast_valid.index,
+                    y=forecast_valid['yhat'],
+                    name ='forecast'
+    )
+    if len(forecasting) != 0:
+        del forecasting[:]
+    forecasting.append(forecast)
+    return forecasting
+
+
 #Update graph
 @app.callback(
     Output('graph', 'figure'),
@@ -225,23 +270,22 @@ def update_figure(submit, checkbox, input_value):
     )
 
     traces.append(actual)
-    m = Prophet()
 
     if checkbox:
 
-        m.fit(df)
-        future = m.make_future_dataframe(periods=120)
-        forecast = m.predict(future)
-        forecast = forecast.set_index('ds')
-        forecast_valid = forecast['yhat']
-        forecast_valid = pd.DataFrame(forecast_valid)
-
-        forecast = go.Scatter(
-                        x=forecast_valid.index,
-                        y=forecast_valid['yhat'],
-                        name ='forecast'
-        )
-        traces.append(forecast)
+        # m.fit(df)
+        # future = m.make_future_dataframe(periods=120)
+        # forecast = m.predict(future)
+        # forecast = forecast.set_index('ds')
+        # forecast_valid = forecast['yhat']
+        # forecast_valid = pd.DataFrame(forecast_valid)
+        #
+        # forecast = go.Scatter(
+        #                 x=forecast_valid.index,
+        #                 y=forecast_valid['yhat'],
+        #                 name ='forecast'
+        # )
+        traces = traces + forecasting
 
     a = {
         'data': traces,
